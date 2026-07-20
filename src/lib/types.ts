@@ -91,6 +91,7 @@ export interface MealLog {
   carbs?: number;
   fat?: number;
   estimated: boolean;
+  rawDescription?: string;
 }
 
 export interface AppData {

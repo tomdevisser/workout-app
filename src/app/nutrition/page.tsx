@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Camera, Sparkles, Trash2 } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -16,6 +18,12 @@ function todayIso() {
 
 export default function NutritionPage() {
   const { data, ready, addMeal, deleteMeal } = useAppData();
+  const [description, setDescription] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [estimated, setEstimated] = useState(false);
+  const [rawDescription, setRawDescription] = useState<string | undefined>(undefined);
+
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
@@ -48,6 +56,37 @@ export default function NutritionPage() {
     setProtein("");
     setCarbs("");
     setFat("");
+    setDescription("");
+    setEstimated(false);
+    setRawDescription(undefined);
+    setAnalyzeError(null);
+  }
+
+  async function handleAnalyze() {
+    const trimmed = description.trim();
+    if (!trimmed) return;
+    setAnalyzing(true);
+    setAnalyzeError(null);
+    try {
+      const res = await fetch("/api/analyze-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Analyse mislukt.");
+      setName(data.title);
+      setCalories(String(Math.round(data.calories)));
+      setProtein(String(Math.round(data.protein)));
+      setCarbs(String(Math.round(data.carbs)));
+      setFat(String(Math.round(data.fat)));
+      setEstimated(true);
+      setRawDescription(trimmed);
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : "Analyse mislukt.");
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   function handleAdd() {
@@ -61,7 +100,8 @@ export default function NutritionPage() {
       protein: protein ? Number(protein) : undefined,
       carbs: carbs ? Number(carbs) : undefined,
       fat: fat ? Number(fat) : undefined,
-      estimated: false,
+      estimated,
+      rawDescription,
     });
     resetForm();
   }
@@ -107,13 +147,47 @@ export default function NutritionPage() {
               <Camera className="size-3.5" /> Scan (binnenkort)
             </Button>
           </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="meal-description" className="text-xs">
+              Beschrijf wat je hebt gegeten
+            </Label>
+            <Textarea
+              id="meal-description"
+              placeholder="Bijv. 2 boterhammen met pindakaas en een banaan"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <Button
+              variant="secondary"
+              onClick={handleAnalyze}
+              disabled={analyzing || !description.trim()}
+            >
+              <Sparkles className="size-4" />
+              {analyzing ? "Analyseren…" : "Analyseer met AI"}
+            </Button>
+            {analyzeError && (
+              <p className="text-xs text-destructive">{analyzeError}</p>
+            )}
+          </div>
+
+          <Separator />
+
+          <p className="text-xs text-muted-foreground">
+            {estimated ? "Geschat door AI — controleer en pas zo nodig aan:" : "Of vul handmatig in:"}
+          </p>
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="meal-name" className="text-xs">Naam</Label>
             <Input
               id="meal-name"
               placeholder="Bijv. Havermout met yoghurt"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setEstimated(false);
+              }}
             />
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -170,7 +244,14 @@ export default function NutritionPage() {
             <Card key={m.id}>
               <CardContent className="flex items-center justify-between py-1">
                 <div>
-                  <p className="text-sm font-medium">{m.name}</p>
+                  <p className="text-sm font-medium">
+                    {m.name}
+                    {m.estimated && (
+                      <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">
+                        (AI-schatting)
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {m.time} &middot; {m.calories ?? 0} kcal &middot; E {m.protein ?? 0}g &middot;{" "}
                     K {m.carbs ?? 0}g &middot; V {m.fat ?? 0}g

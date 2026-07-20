@@ -51,7 +51,7 @@ export function WeekBarChart({ data }: { data: WeekCount[] }) {
               width={barWidth}
               height={barHeight}
               rx={4}
-              className={isActive || isLast ? "fill-orange-500" : "fill-orange-500/40"}
+              className={isActive || isLast ? "fill-primary" : "fill-primary/40"}
             />
             {isActive && (
               <text

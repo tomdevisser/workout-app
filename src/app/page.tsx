@@ -59,7 +59,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-4 pb-4">
       <div className="pt-2">
-        <h1 className="text-2xl font-bold">Vandaag</h1>
+        <h1 className="font-heading text-2xl font-bold">Vandaag</h1>
         <p className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString("nl-NL", {
             weekday: "long",
@@ -70,7 +70,7 @@ export default function HomePage() {
       </div>
 
       <div className="flex items-start gap-2 rounded-xl bg-muted px-3.5 py-3 text-sm">
-        <Quote className="mt-0.5 size-4 shrink-0 text-orange-500" />
+        <Quote className="mt-0.5 size-4 shrink-0 text-primary" />
         <p className="italic text-muted-foreground">{quote}</p>
       </div>
 
@@ -78,12 +78,12 @@ export default function HomePage() {
         <Card
           className={
             review.isOverdue
-              ? "border-orange-500/60 bg-orange-500/10"
+              ? "border-primary/60 bg-primary/10"
               : "border-amber-400/50 bg-amber-400/10"
           }
         >
           <CardContent className="flex items-start gap-3 py-1">
-            <CalendarClock className="mt-0.5 size-5 shrink-0 text-orange-500" />
+            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
             <div className="text-sm">
               {review.isOverdue ? (
                 <p className="font-medium">
@@ -102,7 +102,7 @@ export default function HomePage() {
       )}
 
       {activeSession ? (
-        <Card className="border-orange-500/60">
+        <Card className="border-primary/60">
           <CardHeader>
             <CardTitle>Workout in uitvoering</CardTitle>
           </CardHeader>

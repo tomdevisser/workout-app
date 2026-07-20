@@ -46,6 +46,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
+  useEffect(() => {
+    if (!data) return;
+    const isAyse = data.settings.profile === "ayse";
+    document.documentElement.dataset.theme = isAyse ? "ayse" : "tom";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isAyse ? "#fdf5f8" : "#faf9f5");
+    // Deliberately scoped to profile only — re-running this on every
+    // unrelated data mutation (a logged set, a meal) would be wasted work.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.settings.profile]);
+
   const persist = useCallback((next: AppData) => {
     setData(next);
     saveData(next);

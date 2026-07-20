@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader, Quicksand } from "next/font/google";
 import "./globals.css";
 import { AppDataProvider } from "@/context/app-data";
 import { BottomNav } from "@/components/bottom-nav";
@@ -14,6 +14,20 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const NO_FLASH_THEME_SCRIPT = `(function(){try{var raw=localStorage.getItem('workout-app-data');var s=raw&&JSON.parse(raw).settings;var p=s&&s.profile;document.documentElement.dataset.theme=p==='ayse'?'ayse':'tom';}catch(e){document.documentElement.dataset.theme='tom';}})();`;
 
 export const metadata: Metadata = {
   title: "Workout & Voeding",
@@ -31,7 +45,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#0a0a0a",
+  themeColor: "#faf9f5",
 };
 
 export default function RootLayout({
@@ -42,8 +56,12 @@ export default function RootLayout({
   return (
     <html
       lang="nl"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${quicksand.variable} ${newsreader.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AppDataProvider>
           <ServiceWorkerRegister />

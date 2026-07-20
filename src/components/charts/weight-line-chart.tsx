@@ -60,7 +60,7 @@ export function WeightLineChart({ points }: { points: WeightPoint[] }) {
       <path
         d={path}
         fill="none"
-        stroke="#f97316"
+        stroke="var(--primary)"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -75,7 +75,7 @@ export function WeightLineChart({ points }: { points: WeightPoint[] }) {
               cx={c.x}
               cy={c.y}
               r={isLast || isActive ? 5 : 4}
-              fill="#f97316"
+              fill="var(--primary)"
               stroke="var(--background)"
               strokeWidth="2"
             />

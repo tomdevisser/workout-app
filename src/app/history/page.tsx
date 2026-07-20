@@ -87,7 +87,7 @@ export default function HistoryPage() {
   return (
     <div className="flex flex-col gap-4 pb-4">
       <div className="pt-2">
-        <h1 className="text-2xl font-bold">Historie</h1>
+        <h1 className="font-heading text-2xl font-bold">Historie</h1>
         <p className="text-sm text-muted-foreground">
           {sessions.length} workout{sessions.length === 1 ? "" : "s"} opgeslagen
         </p>

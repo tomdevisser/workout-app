@@ -36,13 +36,13 @@ function StartPicker() {
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <h1 className="text-2xl font-bold">Workout starten</h1>
+      <h1 className="font-heading text-2xl font-bold">Workout starten</h1>
       <p className="text-sm text-muted-foreground">
         Aanbevolen: Workout {nextId} (op basis van je laatste sessie).
       </p>
       <div className="flex flex-col gap-3">
         {templates.map((template) => (
-          <Card key={template.id} className={cn(template.id === nextId && "border-orange-500/60")}>
+          <Card key={template.id} className={cn(template.id === nextId && "border-primary/60")}>
             <CardHeader>
               <CardTitle>{template.name}</CardTitle>
             </CardHeader>
@@ -161,7 +161,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
     <div className="flex flex-col gap-4 pb-4">
       <div className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 pb-2 pt-2 backdrop-blur">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">{getTemplate(profileId, session.templateId).name}</h1>
+          <h1 className="font-heading text-xl font-bold">{getTemplate(profileId, session.templateId).name}</h1>
           <span className="text-xs text-muted-foreground">
             {done}/{total} sets
           </span>
@@ -190,7 +190,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
                   className={cn(
                     "flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]",
                     usingAlternative
-                      ? "border-orange-500 bg-orange-500/10 text-orange-600"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "text-muted-foreground",
                   )}
                 >
@@ -201,7 +201,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
             </div>
             {def?.tip && (
               <p className="mt-2 flex items-start gap-1.5 rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground">
-                <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-orange-500" />
+                <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-primary" />
                 {def.tip}
               </p>
             )}
@@ -278,7 +278,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
                     className={cn(
                       "flex size-9 items-center justify-center rounded-md border transition-colors",
                       set.completed
-                        ? "border-orange-500 bg-orange-500 text-white"
+                        ? "border-primary bg-primary text-primary-foreground"
                         : "border-input text-muted-foreground",
                     )}
                   >

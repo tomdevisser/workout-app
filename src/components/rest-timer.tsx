@@ -42,7 +42,7 @@ export function RestTimer({ exerciseName, totalSeconds, onCancel }: RestTimerPro
             <p className="text-xs text-muted-foreground">Rust &middot; {exerciseName}</p>
             <p
               className={`text-3xl font-bold tabular-nums ${
-                remaining <= 0 ? "text-orange-500" : ""
+                remaining <= 0 ? "text-primary" : ""
               }`}
             >
               {remaining < 0 ? "0:00" : `${minutes}:${seconds.toString().padStart(2, "0")}`}
@@ -63,7 +63,7 @@ export function RestTimer({ exerciseName, totalSeconds, onCancel }: RestTimerPro
         </div>
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full bg-orange-500 transition-all"
+            className="h-full bg-primary transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>

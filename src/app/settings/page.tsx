@@ -60,7 +60,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-4 pb-4">
       <div className="pt-2">
-        <h1 className="text-2xl font-bold">Instellingen</h1>
+        <h1 className="font-heading text-2xl font-bold">Instellingen</h1>
       </div>
 
       <Card>
@@ -76,7 +76,7 @@ export default function SettingsPage() {
                 className={cn(
                   "rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
                   settings.profile === profile.id
-                    ? "border-orange-500 bg-orange-500/10 text-orange-600"
+                    ? "border-primary bg-primary/10 text-primary"
                     : "text-muted-foreground",
                 )}
               >

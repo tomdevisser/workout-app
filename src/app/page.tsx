@@ -1,65 +1,189 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { useAppData } from "@/context/app-data";
+import { getTemplate } from "@/lib/program";
+import {
+  buildSessionFromTemplate,
+  completedSetsCount,
+  getNextWorkoutId,
+  getReviewStatus,
+  repsRangeLabel,
+} from "@/lib/workout-logic";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { WorkoutId } from "@/lib/types";
+import { getQuoteForDate } from "@/lib/quotes";
+import Link from "next/link";
+import { CalendarClock, ChevronRight, Quote } from "lucide-react";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("nl-NL", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+export default function HomePage() {
+  const { data, ready, startSession } = useAppData();
+  const router = useRouter();
+
+  if (!ready || !data) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+        Laden…
+      </div>
+    );
+  }
+
+  const { settings, sessions, activeSession } = data;
+  const profileId = settings.profile;
+  const quote = getQuoteForDate(new Date());
+  const review = getReviewStatus(settings);
+  const nextId = getNextWorkoutId(sessions);
+  const otherId: WorkoutId = nextId === "A" ? "B" : "A";
+  const nextTemplate = getTemplate(profileId, nextId);
+  const otherTemplate = getTemplate(profileId, otherId);
+  const recent = [...sessions]
+    .sort((a, b) => (a.dateStart < b.dateStart ? 1 : -1))
+    .slice(0, 3);
+
+  function handleStart(id: WorkoutId) {
+    const session = buildSessionFromTemplate(profileId, id, settings);
+    startSession(session);
+    router.push("/workout");
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex flex-col gap-4 pb-4">
+      <div className="pt-2">
+        <h1 className="text-2xl font-bold">Vandaag</h1>
+        <p className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString("nl-NL", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
+        </p>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-xl bg-muted px-3.5 py-3 text-sm">
+        <Quote className="mt-0.5 size-4 shrink-0 text-orange-500" />
+        <p className="italic text-muted-foreground">{quote}</p>
+      </div>
+
+      {(review.isUpcoming || review.isOverdue) && (
+        <Card
+          className={
+            review.isOverdue
+              ? "border-orange-500/60 bg-orange-500/10"
+              : "border-amber-400/50 bg-amber-400/10"
+          }
+        >
+          <CardContent className="flex items-start gap-3 py-1">
+            <CalendarClock className="mt-0.5 size-5 shrink-0 text-orange-500" />
+            <div className="text-sm">
+              {review.isOverdue ? (
+                <p className="font-medium">
+                  Tijd om je schema te herzien — wissel oefeningen voor hun alternatief
+                  tijdens je volgende workout voor optimale progressie.
+                </p>
+              ) : (
+                <p className="font-medium">
+                  Nog {review.daysLeft} {review.daysLeft === 1 ? "dag" : "dagen"} tot
+                  schema-review.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeSession ? (
+        <Card className="border-orange-500/60">
+          <CardHeader>
+            <CardTitle>Workout in uitvoering</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              {getTemplate(activeSession.profileId ?? profileId, activeSession.templateId).name}{" "}
+              &middot; gestart om{" "}
+              {new Date(activeSession.dateStart).toLocaleTimeString("nl-NL", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            {(() => {
+              const { done, total } = completedSetsCount(activeSession);
+              return (
+                <div className="flex flex-col gap-1.5">
+                  <Progress value={total ? (done / total) * 100 : 0} />
+                  <p className="text-xs text-muted-foreground">
+                    {done} / {total} sets voltooid
+                  </p>
+                </div>
+              );
+            })()}
+            <Link href="/workout" className={buttonVariants({ size: "lg" })}>
+              Doorgaan <ChevronRight className="size-4" />
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Volgende workout: {nextTemplate.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+              {nextTemplate.exercises.map((ex) => (
+                <li key={ex.id} className="flex justify-between">
+                  <span>{ex.name}</span>
+                  <span className="tabular-nums">
+                    {ex.defaultSets}x{repsRangeLabel(ex.repsMin, ex.repsMax)}
+                    {ex.unit === "seconds" ? "s" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Button size="lg" onClick={() => handleStart(nextId)}>
+              Start {nextTemplate.name}
+            </Button>
+            <button
+              className="text-xs text-muted-foreground underline underline-offset-2"
+              onClick={() => handleStart(otherId)}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              In plaats daarvan {otherTemplate.name} starten
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
+      {recent.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Recente workouts
+          </h2>
+          <div className="flex flex-col gap-2">
+            {recent.map((s) => {
+              const { done, total } = completedSetsCount(s);
+              return (
+                <Card key={s.id}>
+                  <CardContent className="flex items-center justify-between py-1 text-sm">
+                    <span>{getTemplate(s.profileId ?? profileId, s.templateId).name}</span>
+                    <span className="text-muted-foreground">{formatDate(s.dateStart)}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {done}/{total} sets
+                    </span>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }

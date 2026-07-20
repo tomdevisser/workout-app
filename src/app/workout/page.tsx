@@ -70,7 +70,7 @@ function StartPicker() {
 }
 
 function targetLabel(ex: ExerciseLog) {
-  const range = ex.repsMin === ex.repsMax ? `${ex.repsMin}` : `${ex.repsMin}-${ex.repsMax}`;
+  const range = repsRangeLabel(ex.repsMin, ex.repsMax);
   const unit = ex.unit === "seconds" ? "sec" : "reps";
   return `${ex.sets.length} x ${range} ${unit}${ex.perSide ? " /been" : ""}`;
 }
@@ -230,7 +230,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
                       type="number"
                       inputMode="numeric"
                       className="h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm"
-                      placeholder={`${ex.repsMin}-${ex.repsMax}`}
+                      placeholder={repsRangeLabel(ex.repsMin, ex.repsMax)}
                       value={set.reps ?? ""}
                       onChange={(e) =>
                         patchSet(ex.exerciseId, set.setNumber, (s) => ({
@@ -262,7 +262,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
                       type="number"
                       inputMode="numeric"
                       className="h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm"
-                      placeholder={`${ex.repsMin}-${ex.repsMax}`}
+                      placeholder={repsRangeLabel(ex.repsMin, ex.repsMax)}
                       value={set.reps ?? ""}
                       onChange={(e) =>
                         patchSet(ex.exerciseId, set.setNumber, (s) => ({

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAppData } from "@/context/app-data";
 import { genId } from "@/lib/storage";
 import { mealsForDate } from "@/lib/storage";
+import { resizeImageToDataUrl, splitDataUrl } from "@/lib/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Sparkles, Trash2 } from "lucide-react";
+import { Camera, Sparkles, Trash2, X } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -19,10 +20,13 @@ function todayIso() {
 export default function NutritionPage() {
   const { data, ready, addMeal, deleteMeal } = useAppData();
   const [description, setDescription] = useState("");
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [estimated, setEstimated] = useState(false);
   const [rawDescription, setRawDescription] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
@@ -57,21 +61,43 @@ export default function NutritionPage() {
     setCarbs("");
     setFat("");
     setDescription("");
+    setImageDataUrl(null);
     setEstimated(false);
     setRawDescription(undefined);
     setAnalyzeError(null);
+    setImageError(null);
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImageError(null);
+    try {
+      const resized = await resizeImageToDataUrl(file);
+      setImageDataUrl(resized);
+    } catch {
+      setImageError("Kon de foto niet verwerken.");
+    }
   }
 
   async function handleAnalyze() {
     const trimmed = description.trim();
-    if (!trimmed) return;
+    if (!trimmed && !imageDataUrl) return;
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
+      const body: { description: string; image?: { data: string; mediaType: string } } = {
+        description: trimmed,
+      };
+      if (imageDataUrl) {
+        const { mediaType, data } = splitDataUrl(imageDataUrl);
+        body.image = { data, mediaType };
+      }
       const res = await fetch("/api/analyze-meal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: trimmed }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Analyse mislukt.");
@@ -81,7 +107,7 @@ export default function NutritionPage() {
       setCarbs(String(Math.round(data.carbs)));
       setFat(String(Math.round(data.fat)));
       setEstimated(true);
-      setRawDescription(trimmed);
+      setRawDescription(trimmed || undefined);
     } catch (err) {
       setAnalyzeError(err instanceof Error ? err.message : "Analyse mislukt.");
     } finally {
@@ -136,33 +162,60 @@ export default function NutritionPage() {
 
       <Card>
         <CardContent className="flex flex-col gap-3 py-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">Maaltijd toevoegen</p>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled
-              title="Binnenkort: macro's schatten met een foto"
-            >
-              <Camera className="size-3.5" /> Scan (binnenkort)
-            </Button>
-          </div>
+          <p className="text-sm font-semibold">Maaltijd toevoegen</p>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="meal-description" className="text-xs">
-              Beschrijf wat je hebt gegeten
+              Foto en/of beschrijving van wat je hebt gegeten
             </Label>
-            <Textarea
-              id="meal-description"
-              placeholder="Bijv. 2 boterhammen met pindakaas en een banaan"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <div className="flex gap-2">
+              {imageDataUrl ? (
+                <div className="relative shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageDataUrl}
+                    alt="Voorbeeld van de maaltijd"
+                    className="size-16 rounded-md border object-cover"
+                  />
+                  <button
+                    onClick={() => setImageDataUrl(null)}
+                    aria-label="Verwijder foto"
+                    className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex size-16 shrink-0 flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground"
+                >
+                  <Camera className="size-5" />
+                  <span className="text-[9px]">Foto</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <Textarea
+                id="meal-description"
+                placeholder="Bijv. 2 boterhammen met pindakaas en een banaan"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            {imageError && <p className="text-xs text-destructive">{imageError}</p>}
             <Button
               variant="secondary"
               onClick={handleAnalyze}
-              disabled={analyzing || !description.trim()}
+              disabled={analyzing || (!description.trim() && !imageDataUrl)}
             >
               <Sparkles className="size-4" />
               {analyzing ? "Analyseren…" : "Analyseer met AI"}

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import confetti from "canvas-confetti";
 import { useAppData } from "@/context/app-data";
 import { getExerciseDef, getProfileTemplates, getTemplate } from "@/lib/program";
 import {
@@ -147,7 +148,27 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
     }));
   }
 
+  function celebrate() {
+    const primary =
+      getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() ||
+      "#d97757";
+    const defaults = {
+      colors: [primary, "#8bb073", "#4e97a3", "#faf9f5"],
+      disableForReducedMotion: true,
+    };
+    confetti({ ...defaults, particleCount: 70, spread: 70, origin: { x: 0.2, y: 0.6 } });
+    confetti({ ...defaults, particleCount: 70, spread: 70, origin: { x: 0.8, y: 0.6 } });
+    confetti({
+      ...defaults,
+      particleCount: 60,
+      spread: 100,
+      startVelocity: 45,
+      origin: { x: 0.5, y: 0.5 },
+    });
+  }
+
   function handleFinish() {
+    celebrate();
     finishActiveSession();
     router.push("/");
   }

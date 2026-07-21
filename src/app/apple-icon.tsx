@@ -3,6 +3,11 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
+const N = "M50,50 C78,44 84,16 50,6 C34,14 30,40 50,50 Z";
+const E = "M50,50 C56,78 84,84 94,50 C86,34 60,30 50,50 Z";
+const S = "M50,50 C22,56 16,84 50,94 C66,86 70,60 50,50 Z";
+const W = "M50,50 C44,22 16,16 6,50 C14,66 40,70 50,50 Z";
+
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -13,10 +18,15 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #f97316, #ea580c)",
+          background: "#faf9f5",
         }}
       >
-        <div style={{ display: "flex", fontSize: 96 }}>🏋️</div>
+        <svg width="132" height="132" viewBox="0 0 100 100">
+          <path d={N} fill="#8bb073" />
+          <path d={E} fill="#4e97a3" />
+          <path d={S} fill="#b7afa1" />
+          <path d={W} fill="#d97757" />
+        </svg>
       </div>
     ),
     { ...size },

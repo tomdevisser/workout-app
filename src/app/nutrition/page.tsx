@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Sparkles, Trash2, X } from "lucide-react";
+import { Camera, Lightbulb, Sparkles, Trash2, X } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -28,6 +28,17 @@ export default function NutritionPage() {
   const [rawDescription, setRawDescription] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<{
+    suggestion: string;
+    reasoning: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  } | null>(null);
+
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
@@ -43,6 +54,7 @@ export default function NutritionPage() {
   }
 
   const date = todayIso();
+  const goals = data.settings.dailyGoals?.[data.settings.profile];
   const meals = mealsForDate(data.mealLogs, date);
   const totals = meals.reduce(
     (acc, m) => ({
@@ -115,6 +127,47 @@ export default function NutritionPage() {
     }
   }
 
+  async function handleSuggest() {
+    if (!goals) return;
+    setSuggestLoading(true);
+    setSuggestError(null);
+    try {
+      const remaining = {
+        calories: Math.max(goals.calories - totals.calories, 0),
+        protein: Math.max(goals.protein - totals.protein, 0),
+        carbs: Math.max(goals.carbs - totals.carbs, 0),
+        fat: Math.max(goals.fat - totals.fat, 0),
+      };
+      const res = await fetch("/api/suggest-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          remaining,
+          time: new Date().toTimeString().slice(0, 5),
+          loggedMeals: meals.map((m) => m.name),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Suggestie mislukt.");
+      setSuggestion(data);
+    } catch (err) {
+      setSuggestError(err instanceof Error ? err.message : "Suggestie mislukt.");
+    } finally {
+      setSuggestLoading(false);
+    }
+  }
+
+  function handleUseSuggestion() {
+    if (!suggestion) return;
+    setName(suggestion.suggestion);
+    setCalories(String(Math.round(suggestion.calories)));
+    setProtein(String(Math.round(suggestion.protein)));
+    setCarbs(String(Math.round(suggestion.carbs)));
+    setFat(String(Math.round(suggestion.fat)));
+    setEstimated(true);
+    setRawDescription(suggestion.suggestion);
+  }
+
   function handleAdd() {
     if (!name.trim()) return;
     addMeal({
@@ -140,23 +193,93 @@ export default function NutritionPage() {
       </div>
 
       <Card>
-        <CardContent className="grid grid-cols-4 gap-2 py-1 text-center">
-          <div>
-            <p className="text-lg font-bold tabular-nums">{Math.round(totals.calories)}</p>
-            <p className="text-[11px] text-muted-foreground">kcal</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold tabular-nums">{Math.round(totals.protein)}</p>
-            <p className="text-[11px] text-muted-foreground">eiwit (g)</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold tabular-nums">{Math.round(totals.carbs)}</p>
-            <p className="text-[11px] text-muted-foreground">koolh. (g)</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold tabular-nums">{Math.round(totals.fat)}</p>
-            <p className="text-[11px] text-muted-foreground">vet (g)</p>
-          </div>
+        <CardContent className="flex flex-col gap-2 py-2">
+          {goals ? (
+            <div className="flex flex-col gap-2.5">
+              {(
+                [
+                  { key: "calories", label: "kcal", value: totals.calories, goal: goals.calories },
+                  { key: "protein", label: "Eiwit (g)", value: totals.protein, goal: goals.protein },
+                  { key: "carbs", label: "Koolh. (g)", value: totals.carbs, goal: goals.carbs },
+                  { key: "fat", label: "Vet (g)", value: totals.fat, goal: goals.fat },
+                ] as const
+              ).map((m) => {
+                const pct = m.goal > 0 ? Math.min(100, (m.value / m.goal) * 100) : 0;
+                return (
+                  <div key={m.key}>
+                    <div className="flex items-baseline justify-between text-xs">
+                      <span className="text-muted-foreground">{m.label}</span>
+                      <span className="tabular-nums font-medium">
+                        {Math.round(m.value)} / {Math.round(m.goal)}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-4 gap-2 py-1 text-center">
+                <div>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(totals.calories)}</p>
+                  <p className="text-[11px] text-muted-foreground">kcal</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(totals.protein)}</p>
+                  <p className="text-[11px] text-muted-foreground">eiwit (g)</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(totals.carbs)}</p>
+                  <p className="text-[11px] text-muted-foreground">koolh. (g)</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold tabular-nums">{Math.round(totals.fat)}</p>
+                  <p className="text-[11px] text-muted-foreground">vet (g)</p>
+                </div>
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground">
+                Stel dagelijkse doelen in bij Instellingen om je voortgang te zien.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 py-2">
+          <p className="text-sm font-semibold">Wat kun je nu het beste eten?</p>
+          {goals ? (
+            <>
+              <Button variant="secondary" onClick={handleSuggest} disabled={suggestLoading}>
+                <Lightbulb className="size-4" />
+                {suggestLoading ? "Denken…" : "AI suggestie"}
+              </Button>
+              {suggestError && <p className="text-xs text-destructive">{suggestError}</p>}
+              {suggestion && (
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <p className="text-sm font-medium">{suggestion.suggestion}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{suggestion.reasoning}</p>
+                  <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                    ~{Math.round(suggestion.calories)} kcal &middot; E {Math.round(suggestion.protein)}g
+                    &middot; K {Math.round(suggestion.carbs)}g &middot; V {Math.round(suggestion.fat)}g
+                  </p>
+                  <Button size="sm" variant="ghost" className="mt-2" onClick={handleUseSuggestion}>
+                    Gebruik dit voorstel
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Stel eerst dagelijkse doelen in bij Instellingen voor een AI-suggestie.
+            </p>
+          )}
         </CardContent>
       </Card>
 

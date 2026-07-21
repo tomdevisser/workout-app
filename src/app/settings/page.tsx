@@ -6,9 +6,11 @@ import { PROFILE_LIST } from "@/lib/program";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Download, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProfileId } from "@/lib/types";
+import { DailyGoals, ProfileId } from "@/lib/types";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -30,10 +32,21 @@ export default function SettingsPage() {
   }
 
   const { settings } = data;
+  const goals = settings.dailyGoals?.[settings.profile];
 
   function handleProfileChange(id: ProfileId) {
     if (id === settings.profile) return;
     updateSettings({ profile: id, programStartDate: todayIso() });
+  }
+
+  function handleGoalChange(field: keyof DailyGoals, value: string) {
+    const current = goals ?? { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    updateSettings({
+      dailyGoals: {
+        ...settings.dailyGoals,
+        [settings.profile]: { ...current, [field]: Number(value) || 0 },
+      },
+    });
   }
 
   async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -86,6 +99,59 @@ export default function SettingsPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Bepaalt welk schema je op het Vandaag- en Workout-scherm ziet.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dagelijkse doelen</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          <div className="grid grid-cols-4 gap-2">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="goal-cal" className="text-xs">kcal</Label>
+              <Input
+                id="goal-cal"
+                type="number"
+                inputMode="numeric"
+                value={goals?.calories ?? ""}
+                onChange={(e) => handleGoalChange("calories", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="goal-protein" className="text-xs">Eiwit</Label>
+              <Input
+                id="goal-protein"
+                type="number"
+                inputMode="numeric"
+                value={goals?.protein ?? ""}
+                onChange={(e) => handleGoalChange("protein", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="goal-carbs" className="text-xs">Koolh.</Label>
+              <Input
+                id="goal-carbs"
+                type="number"
+                inputMode="numeric"
+                value={goals?.carbs ?? ""}
+                onChange={(e) => handleGoalChange("carbs", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="goal-fat" className="text-xs">Vet</Label>
+              <Input
+                id="goal-fat"
+                type="number"
+                inputMode="numeric"
+                value={goals?.fat ?? ""}
+                onChange={(e) => handleGoalChange("fat", e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Wordt gebruikt om je voortgang te tonen op het Voeding-scherm, per profiel.
           </p>
         </CardContent>
       </Card>

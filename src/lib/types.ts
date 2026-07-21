@@ -75,10 +75,18 @@ export interface WorkoutSession {
   notes?: string;
 }
 
+export interface DailyGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export interface Settings {
   profile: ProfileId;
   programStartDate: string;
   lastUsedWeights: Record<string, number>;
+  dailyGoals?: Partial<Record<ProfileId, DailyGoals>>;
 }
 
 export interface MealLog {

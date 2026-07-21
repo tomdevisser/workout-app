@@ -16,17 +16,7 @@ export default function AppleIcon() {
           background: "linear-gradient(135deg, #f97316, #ea580c)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            fontSize: 100,
-            fontWeight: 800,
-            color: "white",
-            fontFamily: "sans-serif",
-          }}
-        >
-          W
-        </div>
+        <div style={{ display: "flex", fontSize: 96 }}>🏋️</div>
       </div>
     ),
     { ...size },

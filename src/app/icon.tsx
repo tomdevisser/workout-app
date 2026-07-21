@@ -17,17 +17,7 @@ export default function Icon() {
           borderRadius: 96,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            fontSize: 280,
-            fontWeight: 800,
-            color: "white",
-            fontFamily: "sans-serif",
-          }}
-        >
-          W
-        </div>
+        <div style={{ display: "flex", fontSize: 272 }}>🏋️</div>
       </div>
     ),
     { ...size },

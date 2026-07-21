@@ -7,11 +7,18 @@ import { mealsForDate } from "@/lib/storage";
 import { resizeImageToDataUrl, splitDataUrl } from "@/lib/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Lightbulb, Sparkles, Trash2, X } from "lucide-react";
+import { MealCalendar } from "@/components/meal-calendar";
+import { Camera, CalendarDays, Lightbulb, Sparkles, Trash2, X } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -27,6 +34,9 @@ export default function NutritionPage() {
   const [estimated, setEstimated] = useState(false);
   const [rawDescription, setRawDescription] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedDate, setSelectedDate] = useState(todayIso());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
@@ -53,7 +63,16 @@ export default function NutritionPage() {
     );
   }
 
-  const date = todayIso();
+  const date = selectedDate;
+  const isToday = selectedDate === todayIso();
+  const dateLabel = isToday
+    ? "Vandaag"
+    : new Date(`${selectedDate}T00:00:00`).toLocaleDateString("nl-NL", {
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+      });
+  const loggedDates = new Set(data.mealLogs.map((m) => m.date));
   const goals = data.settings.dailyGoals?.[data.settings.profile];
   const meals = mealsForDate(data.mealLogs, date);
   const totals = meals.reduce(
@@ -187,9 +206,15 @@ export default function NutritionPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4">
-      <div className="pt-2">
+      <div className="flex items-center justify-between pt-2">
         <h1 className="font-heading text-2xl font-bold">Voeding</h1>
-        <p className="text-sm text-muted-foreground">Vandaag</p>
+        <button
+          onClick={() => setCalendarOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground capitalize"
+        >
+          <CalendarDays className="size-3.5" />
+          {dateLabel}
+        </button>
       </div>
 
       <Card>
@@ -251,38 +276,41 @@ export default function NutritionPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="flex flex-col gap-3 py-2">
-          <p className="text-sm font-semibold">Wat kun je nu het beste eten?</p>
-          {goals ? (
-            <>
-              <Button variant="secondary" onClick={handleSuggest} disabled={suggestLoading}>
-                <Lightbulb className="size-4" />
-                {suggestLoading ? "Denken…" : "AI suggestie"}
-              </Button>
-              {suggestError && <p className="text-xs text-destructive">{suggestError}</p>}
-              {suggestion && (
-                <div className="rounded-lg border bg-muted/50 p-3">
-                  <p className="text-sm font-medium">{suggestion.suggestion}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{suggestion.reasoning}</p>
-                  <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-                    ~{Math.round(suggestion.calories)} kcal &middot; E {Math.round(suggestion.protein)}g
-                    &middot; K {Math.round(suggestion.carbs)}g &middot; V {Math.round(suggestion.fat)}g
-                  </p>
-                  <Button size="sm" variant="ghost" className="mt-2" onClick={handleUseSuggestion}>
-                    Gebruik dit voorstel
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Stel eerst dagelijkse doelen in bij Instellingen voor een AI-suggestie.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {isToday && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 py-2">
+            <p className="text-sm font-semibold">Wat kun je nu het beste eten?</p>
+            {goals ? (
+              <>
+                <Button variant="secondary" onClick={handleSuggest} disabled={suggestLoading}>
+                  <Lightbulb className="size-4" />
+                  {suggestLoading ? "Denken…" : "AI suggestie"}
+                </Button>
+                {suggestError && <p className="text-xs text-destructive">{suggestError}</p>}
+                {suggestion && (
+                  <div className="rounded-lg border bg-muted/50 p-3">
+                    <p className="text-sm font-medium">{suggestion.suggestion}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{suggestion.reasoning}</p>
+                    <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                      ~{Math.round(suggestion.calories)} kcal &middot; E {Math.round(suggestion.protein)}g
+                      &middot; K {Math.round(suggestion.carbs)}g &middot; V {Math.round(suggestion.fat)}g
+                    </p>
+                    <Button size="sm" variant="ghost" className="mt-2" onClick={handleUseSuggestion}>
+                      Gebruik dit voorstel
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Stel eerst dagelijkse doelen in bij Instellingen voor een AI-suggestie.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
+      {isToday && (
       <Card>
         <CardContent className="flex flex-col gap-3 py-2">
           <p className="text-sm font-semibold">Maaltijd toevoegen</p>
@@ -413,6 +441,7 @@ export default function NutritionPage() {
           </Button>
         </CardContent>
       </Card>
+      )}
 
       {meals.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -445,6 +474,40 @@ export default function NutritionPage() {
           ))}
         </div>
       )}
+
+      {meals.length === 0 && !isToday && (
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Geen maaltijden gelogd op deze dag.
+        </p>
+      )}
+
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kies een dag</DialogTitle>
+          </DialogHeader>
+          <MealCalendar
+            selectedDate={selectedDate}
+            loggedDates={loggedDates}
+            onSelect={(iso) => {
+              setSelectedDate(iso);
+              setCalendarOpen(false);
+            }}
+          />
+          {!isToday && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setSelectedDate(todayIso());
+                setCalendarOpen(false);
+              }}
+            >
+              Terug naar vandaag
+            </Button>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
